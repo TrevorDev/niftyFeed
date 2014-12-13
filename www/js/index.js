@@ -67,6 +67,8 @@ angular.module('todoApp', []).controller('Cntrl', ['$scope', function($scope) {
                     $scope.readNode(node);
                 })
             }
+        }else{
+            reading = false;
         }
     }
     
@@ -112,23 +114,46 @@ angular.module('todoApp', []).controller('Cntrl', ['$scope', function($scope) {
         localStorage.readIds = JSON.stringify(ids)
     }
     
+    $scope.clearReadIds = function(){
+        localStorage.readIds = JSON.stringify([])
+    }
+    
     var nodes = {}
     var curNode = null;
-    
-    getTopStoriesIds().then(function(ids){
-        var readIds = $scope.getReadIds();
-        console.log(readIds)
-        ids = ids.filter(function(item) {
-            return readIds.indexOf(item) === -1;
-        });
-        if(ids.length > 0){
-            nodes[0] = {type: "frontPage", kids: ids, pos: 0}
-            curNode = nodes[0]
-            $scope.readNode(curNode)
-        }else{
-            $scope.$apply(function(){
-                $scope.reader = "No unread posts"
+    var reading = false;
+    //$scope.clearReadIds();
+    var checkForUpdates = function(){
+        if(!reading){
+            reading = true;
+            getTopStoriesIds().then(function(ids){
+                var readIds = $scope.getReadIds();
+                console.log(readIds)
+                ids = ids.filter(function(item) {
+                    return readIds.indexOf(item) === -1;
+                });
+                if(ids.length > 0){
+                    nodes[0] = {type: "frontPage", kids: ids, pos: 0}
+                    curNode = nodes[0]
+                    $scope.readNode(curNode)
+                }else{
+                    $scope.$apply(function(){
+                        $scope.reader = "Waiting for new posts..."
+                    })
+                    reading = false;
+                }
             })
         }
-    })
+    }
+    var updateLoop = function(){
+        checkForUpdates()
+        setTimeout(function(){
+            updateLoop()
+        }, 10000)
+    }
+    
+    updateLoop()
+    
+    
+    
+    
 }]);
